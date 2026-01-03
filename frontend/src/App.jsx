@@ -3,6 +3,9 @@ import Home from "./pages/Home.jsx";
 import DayTracker from "./pages/DayTracker.jsx";
 import SpendTracker from "./pages/SpendTracker.jsx";
 import TimeAnalytics from "./pages/TimeAnalytics";
+import CommentsAnalytics from "./pages/CommentsAnalytics";
+
+
 
 
 export default function App() {
@@ -17,6 +20,7 @@ export default function App() {
         <Route path="/daily" element={<DayTracker />} />
         <Route path="/spend" element={<SpendTracker />} />
         <Route path="/analytics" element={<TimeAnalytics />} />
+        <Route path="/comments" element={<CommentsAnalytics />} />
       </Routes>
     </div>
   );

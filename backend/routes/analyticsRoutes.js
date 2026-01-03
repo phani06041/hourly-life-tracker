@@ -144,5 +144,47 @@ router.get("/spend", async (req, res) => {
   }
 });
 
+/**
+ * GET /api/analytics/comments
+ * Query:
+ *   type=monthly | yearly | lifetime | range
+ *   year=2026
+ *   month=01
+ *   from=2024-01
+ *   to=2026-01
+ */
+router.get("/comments", async (req, res) => {
+  try {
+    const { type, year, month, from, to } = req.query;
+    let filter = {};
+
+    if (type === "monthly") {
+      filter.date = { $regex: `^${year}-${month}` };
+    }
+    else if (type === "yearly") {
+      filter.date = { $regex: `^${year}-` };
+    }
+    else if (type === "range") {
+      filter.date = { $gte: from, $lte: to };
+    }
+    // lifetime → no filter
+
+    const days = await DayEntry.find(filter).sort({ date: -1 });
+
+    const comments = days
+      .filter(d => d.comment && d.comment.trim())
+      .map(d => ({
+        date: d.date,
+        text: d.comment
+      }));
+
+    res.json(comments);
+  } catch (err) {
+    console.error("Comments fetch error", err);
+    res.status(500).json([]);
+  }
+});
+
+
 
 export default router;

@@ -20,6 +20,14 @@ export default function Home() {
         <button onClick={() => navigate("/analytics")}>
           Time Analytics
         </button>
+<button onClick={() => navigate("/comments")}>
+  📝 <strong>Comments & Highlights</strong>
+  <span className="button-subtext">
+    View reflections, notes & highlights over time
+  </span>
+</button>
+
+
       </div>
     </div>
   );
