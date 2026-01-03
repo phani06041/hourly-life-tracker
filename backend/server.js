@@ -12,18 +12,27 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 3️⃣ Routes (AFTER app exists)
+// 3️⃣ Health check (optional but useful)
+app.get("/health", (req, res) => {
+  res.json({ status: "OK", time: new Date() });
+});
+
+// 4️⃣ Routes
 app.use("/api/day", dayRoutes);
 app.use("/api/analytics", analyticsRoutes);
 
-// 4️⃣ MongoDB connection
+// 5️⃣ MongoDB connection
 mongoose
   .connect("mongodb://127.0.0.1:27017/hourly_life_tracker")
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.error("Mongo error:", err));
+  .then(() => {
+    console.log("✅ MongoDB connected");
+  })
+  .catch((err) => {
+    console.error("❌ MongoDB connection error:", err);
+  });
 
-// 5️⃣ Start server LAST
+// 6️⃣ Start server LAST
 const PORT = 5001;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
 });

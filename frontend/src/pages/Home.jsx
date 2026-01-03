@@ -5,9 +5,7 @@ export default function Home() {
 
   return (
     <div className="home">
-      <p className="subtitle">
-        Track every hour of your life and every rupee you spend.
-      </p>
+      <p className="subtitle">Track • Analyze • Improve</p>
 
       <div className="home-actions">
         <button onClick={() => navigate("/daily")}>
@@ -16,6 +14,11 @@ export default function Home() {
 
         <button onClick={() => navigate("/spend")}>
           Spend Tracker
+        </button>
+
+        {/* ✅ NEW */}
+        <button onClick={() => navigate("/analytics")}>
+          Time Analytics
         </button>
       </div>
     </div>
