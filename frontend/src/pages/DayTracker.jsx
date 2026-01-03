@@ -12,7 +12,8 @@ import { Doughnut } from "react-chartjs-2";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-// ---------- CONSTANTS ----------
+/* ================= CONSTANTS ================= */
+
 const LEGEND = {
   1: { label: "Sleep", color: "#4f6ef7" },
   2: { label: "Travel", color: "#17a2b8" },
@@ -25,7 +26,8 @@ const LEGEND = {
 
 const emptyHours = () => Array(24).fill(0);
 
-// ---------- COMPONENT ----------
+/* ================= COMPONENT ================= */
+
 export default function DayTracker() {
   const navigate = useNavigate();
 
@@ -41,46 +43,43 @@ export default function DayTracker() {
   const [isPainting, setIsPainting] = useState(false);
   const [is24Hour, setIs24Hour] = useState(false);
 
-  // ---------- LOAD DAY ----------
-useEffect(() => {
-  const loadDay = async () => {
-    try {
-      const res = await axios.get(
-        `http://localhost:5001/api/day/${date}`
-      );
+  /* ================= LOAD DAY ================= */
 
-      // ✅ CASE 1: No data for this date
-      if (!res.data) {
-        setHours(Array(24).fill(0));
+  useEffect(() => {
+    const loadDay = async () => {
+      try {
+        const res = await axios.get(
+          `http://localhost:5001/api/day/${date}`
+        );
+
+        if (!res.data) {
+          setHours(emptyHours());
+          setSpent(0);
+          setWeight(0);
+          setComment("");
+          return;
+        }
+
+        setHours(
+          Array.from({ length: 24 }, (_, i) => res.data.hours?.[i] ?? 0)
+        );
+        setSpent(res.data.spent ?? 0);
+        setWeight(res.data.weight ?? 0);
+        setComment(res.data.comment ?? "");
+
+      } catch {
+        setHours(emptyHours());
         setSpent(0);
         setWeight(0);
         setComment("");
-        return;
       }
+    };
 
-      // ✅ CASE 2: Data exists
-      setHours(
-        Array.from({ length: 24 }, (_, i) => res.data.hours?.[i] ?? 0)
-      );
-      setSpent(res.data.spent ?? 0);
-      setWeight(res.data.weight ?? 0);
-      setComment(res.data.comment ?? "");
+    loadDay();
+  }, [date]);
 
-    } catch (err) {
-      // Backend error → reset safely
-      setHours(Array(24).fill(0));
-      setSpent(0);
-      setWeight(0);
-      setComment("");
-    }
-  };
+  /* ================= SAVE ================= */
 
-  loadDay();
-}, [date]);
-
-
-
-  // ---------- SAVE ----------
   const saveDay = async () => {
     const payload = {
       date,
@@ -94,7 +93,8 @@ useEffect(() => {
     alert("Saved");
   };
 
-  // ---------- HELPERS ----------
+  /* ================= HELPERS ================= */
+
   const paintHour = (index) => {
     setHours((prev) => {
       const copy = [...prev];
@@ -105,60 +105,87 @@ useEffect(() => {
 
   const formatHour = (h) => {
     if (is24Hour) return `${h}:00`;
-
     const hour = h % 12 || 12;
     return `${hour} ${h < 12 ? "AM" : "PM"}`;
   };
 
-  // ---------- ANALYTICS ----------
-  const counts = {};
-  hours.forEach((h) => {
-    if (h) counts[h] = (counts[h] || 0) + 1;
-  });
+  /* ================= ANALYTICS ================= */
+
+  const activityStats = Object.entries(LEGEND)
+    .map(([k, v]) => {
+      const count = hours.filter((h) => h === Number(k)).length;
+      return {
+        key: k,
+        label: v.label,
+        color: v.color,
+        hours: count
+      };
+    })
+    .filter((a) => a.hours > 0);
+
+  const totalTracked = activityStats.reduce(
+    (sum, a) => sum + a.hours,
+    0
+  );
 
   const doughnutData = {
-    labels: Object.keys(counts).map((k) => LEGEND[k].label),
+    labels: activityStats.map((a) => a.label),
     datasets: [
       {
-        data: Object.values(counts),
-        backgroundColor: Object.keys(counts).map(
-          (k) => LEGEND[k].color
-        )
+        data: activityStats.map((a) => a.hours),
+        backgroundColor: activityStats.map((a) => a.color),
+        borderWidth: 2,
+        borderColor: "#fff"
       }
     ]
   };
 
-  // ---------- UI ----------
+  const doughnutOptions = {
+    cutout: "70%",
+    plugins: {
+      tooltip: {
+        callbacks: {
+          label: (ctx) => {
+            const h = ctx.raw;
+            const pct = ((h / totalTracked) * 100).toFixed(1);
+            return `${ctx.label}: ${h}h (${pct}%)`;
+          }
+        }
+      },
+      legend: { display: false }
+    }
+  };
+
+  /* ================= UI ================= */
+
   return (
-    <div style={{ maxWidth: 1200, margin: "0 auto", padding: 20 }}>
+    <div className="container">
       <h1>Hourly Life & Spend Tracker</h1>
 
       <button onClick={() => navigate("/")}>← Back</button>
 
       <h2>Daily Tracker</h2>
 
-      <input
-        type="date"
-        value={date}
-        onChange={(e) => setDate(e.target.value)}
-      />
+      {/* DATE + FORMAT */}
+      <div style={{ display: "flex", gap: 12 }}>
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+        />
+        <button onClick={() => setIs24Hour(!is24Hour)}>
+          Switch to {is24Hour ? "12-Hour" : "24-Hour"}
+        </button>
+      </div>
 
-      <button onClick={() => setIs24Hour(!is24Hour)}>
-        Switch to {is24Hour ? "12-Hour" : "24-Hour"}
-      </button>
-
-      {/* LEGEND */}
-      <div style={{ display: "flex", gap: 8, margin: "12px 0" }}>
+      {/* LEGEND PICKER */}
+      <div className="legend-picker">
         {Object.entries(LEGEND).map(([k, v]) => (
-          <div
+          <button
             key={k}
             onClick={() => setSelectedActivity(Number(k))}
             style={{
               background: v.color,
-              padding: "6px 10px",
-              color: "#fff",
-              borderRadius: 4,
-              cursor: "pointer",
               border:
                 selectedActivity === Number(k)
                   ? "2px solid black"
@@ -166,22 +193,19 @@ useEffect(() => {
             }}
           >
             {k} – {v.label}
-          </div>
+          </button>
         ))}
       </div>
 
       {/* HOURS GRID */}
       <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(24, 1fr)",
-          gap: 4
-        }}
+        className="hour-grid"
         onMouseUp={() => setIsPainting(false)}
       >
         {hours.map((val, i) => (
           <div
             key={i}
+            className="hour-cell"
             onMouseDown={() => {
               setIsPainting(true);
               paintHour(i);
@@ -190,18 +214,8 @@ useEffect(() => {
               if (isPainting) paintHour(i);
             }}
             style={{
-              height: 45,
               background: LEGEND[val]?.color || "#fff",
-              border: "1px solid #ccc",
-              borderRadius: 4,
-              color: val ? "#fff" : "#000",
-              fontSize: 11,
-              cursor: "pointer",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-              userSelect: "none"
+              color: val ? "#fff" : "#000"
             }}
           >
             <div>{formatHour(i)}</div>
@@ -210,58 +224,89 @@ useEffect(() => {
         ))}
       </div>
 
-      {/* INPUTS */}
-<div style={{ display: "flex", gap: 16, marginTop: 16 }}>
-  {/* SPENT */}
-  <div style={{ display: "flex", flexDirection: "column" }}>
-    <label style={{ fontWeight: "bold", marginBottom: 4 }}>
-      Spent (₹)
-    </label>
-    <input
-      type="number"
-      value={spent}
-      onChange={(e) => setSpent(+e.target.value)}
-      style={{ width: 120 }}
-    />
-  </div>
+      {/* META INPUTS */}
+      <div className="meta-row">
+        <div className="meta-field">
+          <label>Spent (₹)</label>
+          <input
+            type="number"
+            value={spent}
+            onChange={(e) => setSpent(+e.target.value)}
+          />
+        </div>
 
-  {/* WEIGHT */}
-  <div style={{ display: "flex", flexDirection: "column" }}>
-    <label style={{ fontWeight: "bold", marginBottom: 4 }}>
-      Weight (kg)
-    </label>
-    <input
-      type="number"
-      value={weight}
-      onChange={(e) => setWeight(+e.target.value)}
-      style={{ width: 120 }}
-    />
-  </div>
+        <div className="meta-field">
+          <label>Weight (kg)</label>
+          <input
+            type="number"
+            value={weight}
+            onChange={(e) => setWeight(+e.target.value)}
+          />
+        </div>
 
-  {/* COMMENT */}
-  <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-    <label style={{ fontWeight: "bold", marginBottom: 4 }}>
-      Comment / Highlight
-    </label>
-    <textarea
-      value={comment}
-      onChange={(e) => setComment(e.target.value)}
-      style={{ resize: "vertical", minHeight: 40 }}
-    />
-  </div>
-</div>
+        <div className="meta-comment">
+          <label>Comment / Highlight</label>
+          <textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+          />
+        </div>
+      </div>
 
-
-      <button onClick={saveDay} style={{ marginTop: 10 }}>
+      <button onClick={saveDay} style={{ marginTop: 12 }}>
         Save Day
       </button>
 
       {/* ANALYTICS */}
       <h3 style={{ marginTop: 30 }}>Daily Time Distribution</h3>
-      {Object.keys(counts).length > 0 && (
-        <div style={{ width: 300 }}>
-          <Doughnut data={doughnutData} />
+
+      {activityStats.length > 0 ? (
+        <div style={{ display: "flex", gap: 30 }}>
+          <div style={{ position: "relative", width: 260 }}>
+            <Doughnut
+              data={doughnutData}
+              options={doughnutOptions}
+            />
+            <div
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                textAlign: "center"
+              }}
+            >
+              <div style={{ fontSize: 24, fontWeight: "bold" }}>
+                {totalTracked}h
+              </div>
+              <div style={{ fontSize: 12, color: "#666" }}>
+                Total Logged
+              </div>
+            </div>
+          </div>
+
+          <div>
+            {activityStats.map((a) => {
+              const pct = ((a.hours / totalTracked) * 100).toFixed(1);
+              return (
+                <div key={a.key} style={{ marginBottom: 8 }}>
+                  <span
+                    style={{
+                      width: 12,
+                      height: 12,
+                      background: a.color,
+                      display: "inline-block",
+                      marginRight: 8
+                    }}
+                  />
+                  <strong>{a.label}</strong> — {a.hours}h ({pct}%)
+                </div>
+              );
+            })}
+          </div>
         </div>
+      ) : (
+        <p>No activities logged</p>
       )}
     </div>
   );
