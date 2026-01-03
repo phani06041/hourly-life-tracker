@@ -42,26 +42,43 @@ export default function DayTracker() {
   const [is24Hour, setIs24Hour] = useState(false);
 
   // ---------- LOAD DAY ----------
-  useEffect(() => {
-    axios
-      .get(`http://localhost:5001/api/day/${date}`)
-      .then((res) => {
-        if (!res.data) return;
+useEffect(() => {
+  const loadDay = async () => {
+    try {
+      const res = await axios.get(
+        `http://localhost:5001/api/day/${date}`
+      );
 
-        setHours(
-          Array.from({ length: 24 }, (_, i) => res.data.hours?.[i] || 0)
-        );
-        setSpent(res.data.spent || 0);
-        setWeight(res.data.weight || 0);
-        setComment(res.data.comment || "");
-      })
-      .catch(() => {
-        setHours(emptyHours());
+      // ✅ CASE 1: No data for this date
+      if (!res.data) {
+        setHours(Array(24).fill(0));
         setSpent(0);
         setWeight(0);
         setComment("");
-      });
-  }, [date]);
+        return;
+      }
+
+      // ✅ CASE 2: Data exists
+      setHours(
+        Array.from({ length: 24 }, (_, i) => res.data.hours?.[i] ?? 0)
+      );
+      setSpent(res.data.spent ?? 0);
+      setWeight(res.data.weight ?? 0);
+      setComment(res.data.comment ?? "");
+
+    } catch (err) {
+      // Backend error → reset safely
+      setHours(Array(24).fill(0));
+      setSpent(0);
+      setWeight(0);
+      setComment("");
+    }
+  };
+
+  loadDay();
+}, [date]);
+
+
 
   // ---------- SAVE ----------
   const saveDay = async () => {
@@ -194,26 +211,46 @@ export default function DayTracker() {
       </div>
 
       {/* INPUTS */}
-      <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
-        <input
-          type="number"
-          placeholder="₹ Spent"
-          value={spent}
-          onChange={(e) => setSpent(+e.target.value)}
-        />
-        <input
-          type="number"
-          placeholder="Weight (kg)"
-          value={weight}
-          onChange={(e) => setWeight(+e.target.value)}
-        />
-        <textarea
-          placeholder="Comment / Highlight"
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-          style={{ flex: 1, resize: "vertical" }}
-        />
-      </div>
+<div style={{ display: "flex", gap: 16, marginTop: 16 }}>
+  {/* SPENT */}
+  <div style={{ display: "flex", flexDirection: "column" }}>
+    <label style={{ fontWeight: "bold", marginBottom: 4 }}>
+      Spent (₹)
+    </label>
+    <input
+      type="number"
+      value={spent}
+      onChange={(e) => setSpent(+e.target.value)}
+      style={{ width: 120 }}
+    />
+  </div>
+
+  {/* WEIGHT */}
+  <div style={{ display: "flex", flexDirection: "column" }}>
+    <label style={{ fontWeight: "bold", marginBottom: 4 }}>
+      Weight (kg)
+    </label>
+    <input
+      type="number"
+      value={weight}
+      onChange={(e) => setWeight(+e.target.value)}
+      style={{ width: 120 }}
+    />
+  </div>
+
+  {/* COMMENT */}
+  <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+    <label style={{ fontWeight: "bold", marginBottom: 4 }}>
+      Comment / Highlight
+    </label>
+    <textarea
+      value={comment}
+      onChange={(e) => setComment(e.target.value)}
+      style={{ resize: "vertical", minHeight: 40 }}
+    />
+  </div>
+</div>
+
 
       <button onClick={saveDay} style={{ marginTop: 10 }}>
         Save Day

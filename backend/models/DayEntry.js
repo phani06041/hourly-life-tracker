@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
 
-// Hours: 0–23
 const hourSchema = {};
 for (let i = 0; i < 24; i++) {
   hourSchema[i] = { type: Number, default: 0 };
@@ -8,28 +7,11 @@ for (let i = 0; i < 24; i++) {
 
 const dayEntrySchema = new mongoose.Schema(
   {
-    date: {
-      type: String,
-      unique: true,
-      required: true
-    },
-
+    date: { type: String, required: true, unique: true },
     hours: hourSchema,
-
-    spent: {
-      type: Number,
-      default: 0
-    },
-
-    weight: {
-      type: Number,
-      default: 0
-    },
-
-    comment: {
-      type: String,
-      default: ""
-    }
+    spent: { type: Number, default: 0 },
+    weight: { type: Number, default: 0 },
+    comment: { type: String, default: "" }
   },
   { timestamps: true }
 );
