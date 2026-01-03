@@ -1,5 +1,6 @@
 import { Doughnut, Bar } from "react-chartjs-2";
 import { useEffect, useState } from "react";
+import ExportButton from "../components/ExportButton";
 
 export default function Analytics() {
   const [year, setYear] = useState("2026");

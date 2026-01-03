@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import ExportButton from "../components/ExportButton";
 
 const CURRENT_YEAR = new Date().getFullYear();
 const CURRENT_MONTH = String(new Date().getMonth() + 1).padStart(2, "0");
@@ -44,6 +45,9 @@ export default function CommentsHighlights() {
     <div className="container">
       <h1>Comments & Highlights</h1>
       <button onClick={() => navigate("/")}>← Back</button>
+<ExportButton
+  url={`http://localhost:5001/api/export/comments?type=${mode}&year=${year}&month=${month}&from=${from}&to=${to}`}
+/>
 
       {/* MODE SWITCH */}
       <div style={{ marginTop: 20 }}>

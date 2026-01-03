@@ -9,6 +9,7 @@ import {
   Legend
 } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
+import ExportButton from "../components/ExportButton";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -177,6 +178,9 @@ export default function DayTracker() {
           Switch to {is24Hour ? "12-Hour" : "24-Hour"}
         </button>
       </div>
+<ExportButton
+  url={`http://localhost:5001/api/export/daily?type=daily&date=${date}`}
+/>
 
       {/* LEGEND PICKER */}
       <div className="legend-picker">

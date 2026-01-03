@@ -4,6 +4,9 @@ import cors from "cors";
 
 import dayRoutes from "./routes/dayRoutes.js";
 import analyticsRoutes from "./routes/analyticsRoutes.js";
+import exportRoutes from "./routes/exportRoutes.js";
+
+
 
 // 1️⃣ Create app FIRST
 const app = express();
@@ -20,6 +23,7 @@ app.get("/health", (req, res) => {
 // 4️⃣ Routes
 app.use("/api/day", dayRoutes);
 app.use("/api/analytics", analyticsRoutes);
+app.use("/api/export", exportRoutes);
 
 // 5️⃣ MongoDB connection
 mongoose

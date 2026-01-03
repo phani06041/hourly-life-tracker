@@ -11,6 +11,7 @@ import {
   Legend
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
+import ExportButton from "../components/ExportButton";
 
 ChartJS.register(
   CategoryScale,
@@ -179,6 +180,9 @@ export default function SpendTracker() {
     <div className="container">
       <h1>Spend Tracker</h1>
       <button onClick={() => navigate("/")}>← Back</button>
+<ExportButton
+  url={`http://localhost:5001/api/export/spend?type=${mode}&year=${year}&from=${from}&to=${to}`}
+/>
 
       {/* MODE SWITCH */}
       <div style={{ marginTop: 20 }}>

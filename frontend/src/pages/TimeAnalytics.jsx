@@ -9,6 +9,7 @@ import {
   Legend
 } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
+import ExportButton from "../components/ExportButton";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -141,6 +142,9 @@ export default function TimeAnalytics() {
     <div className="container">
       <h1>Time Analytics</h1>
       <button onClick={() => navigate("/")}>← Back</button>
+<ExportButton
+  url={`http://localhost:5001/api/export/time?type=${mode}&year=${year}&month=${month}&from=${from}&to=${to}`}
+/>
 
       {/* MODE SWITCH */}
       <div style={{ marginTop: 20 }}>
