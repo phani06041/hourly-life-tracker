@@ -1,167 +1,191 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { Doughnut } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+} from "chart.js";
 
-const API = "http://localhost:5001/api/day";
+ChartJS.register(ArcElement, Tooltip, Legend);
 
 const LEGEND = {
-  1: { label: "Sleep", color: "#4c6ef5" },
-  2: { label: "Travel", color: "#15aabf" },
-  3: { label: "Work", color: "#40c057" },
-  4: { label: "Chores", color: "#fab005" },
-  5: { label: "Exercise", color: "#fa5252" },
-  6: { label: "Leisure", color: "#7950f2" },
-  7: { label: "Misc / Prep", color: "#868e96" }
+  1: { label: "Sleep", color: "#4f6ef7" },
+  2: { label: "Travel", color: "#17a2b8" },
+  3: { label: "Work", color: "#28a745" },
+  4: { label: "Chores", color: "#ffc107" },
+  5: { label: "Exercise", color: "#ff4d4f" },
+  6: { label: "Leisure", color: "#7b61ff" },
+  7: { label: "Misc / Prep", color: "#6c757d" },
 };
 
 const emptyHours = () =>
-  Object.fromEntries([...Array(24).keys()].map(h => [h, 0]));
+  Array.from({ length: 24 }, () => 0);
 
 export default function DayTracker() {
+  const navigate = useNavigate();
+
   const today = new Date().toISOString().slice(0, 10);
 
   const [date, setDate] = useState(today);
   const [hours, setHours] = useState(emptyHours());
-  const [spent, setSpent] = useState("");
-  const [weight, setWeight] = useState("");
+  const [spent, setSpent] = useState(0);
+  const [weight, setWeight] = useState(0);
   const [comment, setComment] = useState("");
-  const [timeFormat, setTimeFormat] = useState("24"); // "24" | "12"
+  const [is24Hour, setIs24Hour] = useState(false);
 
-  // ---- FORMAT HOUR LABEL ----
-  const formatHourLabel = (hour) => {
-    if (timeFormat === "24") return hour;
-    const h = hour % 12 || 12;
-    const suffix = hour < 12 ? "AM" : "PM";
-    return `${h} ${suffix}`;
-  };
-
-  // ---- LOAD DAY ON DATE CHANGE ----
+  /* ---------------- FETCH DAY ---------------- */
   useEffect(() => {
-    if (!date) return;
-
-    fetch(`${API}/date/${date}`)
-      .then(r => r.json())
-      .then(d => {
-        if (!d) {
+    axios
+      .get(`http://localhost:5001/api/day/${date}`)
+      .then((res) => {
+        if (!res.data) {
           setHours(emptyHours());
-          setSpent("");
-          setWeight("");
+          setSpent(0);
+          setWeight(0);
           setComment("");
           return;
         }
-        setHours(d.hours || emptyHours());
-        setSpent(d.spent ?? "");
-        setWeight(d.weight ?? "");
-        setComment(d.comment ?? "");
+        setHours(Object.values(res.data.hours));
+        setSpent(res.data.spent || 0);
+        setWeight(res.data.weight || 0);
+        setComment(res.data.comment || "");
+      })
+      .catch(() => {
+        setHours(emptyHours());
       });
   }, [date]);
 
-  // ---- SAVE DAY ----
+  /* ---------------- SAVE ---------------- */
   const saveDay = async () => {
-    await fetch(API, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        date,
-        hours,
-        spent: Number(spent) || 0,
-        weight: Number(weight) || 0,
-        comment
-      })
+    await axios.post("http://localhost:5001/api/day", {
+      date,
+      hours: Object.fromEntries(hours.map((v, i) => [i, v])),
+      spent,
+      weight,
+      comment,
     });
+    alert("Saved");
+  };
 
-    alert("Day saved");
+  /* ---------------- DONUT DATA ---------------- */
+  const totals = {};
+  hours.forEach((v) => {
+    if (v > 0) totals[v] = (totals[v] || 0) + 1;
+  });
+
+  const donutData = {
+    labels: Object.keys(totals).map(
+      (k) => LEGEND[k].label
+    ),
+    datasets: [
+      {
+        data: Object.values(totals),
+        backgroundColor: Object.keys(totals).map(
+          (k) => LEGEND[k].color
+        ),
+      },
+    ],
+  };
+
+  const formatHour = (h) => {
+    if (is24Hour) return `${h}:00`;
+    const hour = h % 12 || 12;
+    return `${hour} ${h < 12 ? "AM" : "PM"}`;
   };
 
   return (
-    <div>
+    <div className="container">
+      <h1>Hourly Life & Spend Tracker</h1>
+
+      <button onClick={() => navigate("/")}>← Back</button>
+
       <h2>Daily Tracker</h2>
 
-      {/* DATE */}
       <input
         type="date"
         value={date}
-        onChange={e => setDate(e.target.value)}
+        onChange={(e) => setDate(e.target.value)}
       />
 
-      {/* TIME FORMAT TOGGLE */}
-      <div style={{ margin: "10px 0" }}>
-        <button
-          onClick={() =>
-            setTimeFormat(timeFormat === "24" ? "12" : "24")
-          }
-        >
-          Switch to {timeFormat === "24" ? "12-Hour" : "24-Hour"} Format
-        </button>
-      </div>
-
-      {/* TIME HEADER */}
-      <div className="time-header">
-        {[...Array(24).keys()].map(h => (
-          <div key={h}>{formatHourLabel(h)}</div>
-        ))}
-      </div>
-
-      {/* HOURS GRID */}
-      <div className="hour-grid">
-        {Object.keys(hours).map(h => (
-          <input
-            key={h}
-            type="number"
-            min="0"
-            max="7"
-            value={hours[h]}
-            onChange={e =>
-              setHours({ ...hours, [h]: Number(e.target.value) })
-            }
-            style={{
-              background: LEGEND[hours[h]]?.color || "#fff"
-            }}
-          />
-        ))}
-      </div>
-
-      {/* META ROW */}
-      <div className="meta-row">
-        <div className="meta-field">
-          <label>₹ Spent</label>
-          <input
-            type="number"
-            value={spent}
-            onChange={e => setSpent(e.target.value)}
-          />
-        </div>
-
-        <div className="meta-field">
-          <label>Weight (kg)</label>
-          <input
-            type="number"
-            step="0.1"
-            value={weight}
-            onChange={e => setWeight(e.target.value)}
-          />
-        </div>
-
-        <div className="meta-field meta-comment">
-          <label>Comment / Highlight</label>
-          <textarea
-            value={comment}
-            onChange={e => setComment(e.target.value)}
-          />
-        </div>
-      </div>
-
-      <button onClick={saveDay} style={{ marginTop: 8 }}>
-        Save Day
+      <button onClick={() => setIs24Hour(!is24Hour)}>
+        Switch to {is24Hour ? "12" : "24"}-Hour
       </button>
 
       {/* LEGEND */}
-      <div className="legend">
+      <div style={{ display: "flex", gap: 8, margin: "12px 0" }}>
         {Object.entries(LEGEND).map(([k, v]) => (
-          <div key={k}>
-            <span style={{ background: v.color }} />
+          <span
+            key={k}
+            style={{
+              background: v.color,
+              padding: "4px 8px",
+              color: "#fff",
+              borderRadius: 4,
+              fontSize: 12,
+            }}
+          >
             {k} – {v.label}
+          </span>
+        ))}
+      </div>
+
+      {/* HOURS */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(24, 1fr)", gap: 4 }}>
+        {hours.map((val, i) => (
+          <div key={i}>
+            <div style={{ fontSize: 10, textAlign: "center" }}>
+              {formatHour(i)}
+            </div>
+            <input
+              value={val}
+              onChange={(e) => {
+                const copy = [...hours];
+                copy[i] = Number(e.target.value);
+                setHours(copy);
+              }}
+              style={{
+                width: "100%",
+                background: LEGEND[val]?.color || "#fff",
+                color: val ? "#fff" : "#000",
+                textAlign: "center",
+              }}
+            />
           </div>
         ))}
       </div>
+
+      {/* META */}
+      <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
+        <div>
+          ₹ Spent
+          <input value={spent} onChange={(e) => setSpent(e.target.value)} />
+        </div>
+        <div>
+          Weight (kg)
+          <input value={weight} onChange={(e) => setWeight(e.target.value)} />
+        </div>
+        <div style={{ flex: 1 }}>
+          Comment / Highlight
+          <textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            style={{ width: "100%", resize: "both" }}
+          />
+        </div>
+      </div>
+
+      <button onClick={saveDay}>Save Day</button>
+
+      {/* DONUT */}
+      <h3>Daily Time Distribution</h3>
+      {Object.keys(totals).length > 0 && (
+        <div style={{ maxWidth: 400 }}>
+          <Doughnut data={donutData} />
+        </div>
+      )}
     </div>
   );
 }

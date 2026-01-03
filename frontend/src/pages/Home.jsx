@@ -5,19 +5,19 @@ export default function Home() {
 
   return (
     <div className="home">
-      <button
-        className="home-btn"
-        onClick={() => navigate("/daily")}
-      >
-        Daily Tracker
-      </button>
+      <p className="subtitle">
+        Track every hour of your life and every rupee you spend.
+      </p>
 
-      <button
-        className="home-btn"
-        onClick={() => navigate("/spend")}
-      >
-        Spend Tracker
-      </button>
+      <div className="home-actions">
+        <button onClick={() => navigate("/daily")}>
+          Daily Tracker
+        </button>
+
+        <button onClick={() => navigate("/spend")}>
+          Spend Tracker
+        </button>
+      </div>
     </div>
   );
 }

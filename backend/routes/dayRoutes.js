@@ -1,15 +1,25 @@
 import express from "express";
-import { saveDay, getDay, getByMonth } from "../controllers/dayController.js";
+import DayEntry from "../models/DayEntry.js";
 
 const router = express.Router();
 
-// MOST SPECIFIC FIRST
-router.get("/date/:date", getDay);
+/* SAVE / UPDATE DAY */
+router.post("/", async (req, res) => {
+  const { date, hours, spent, weight, comment } = req.body;
 
-// MONTH QUERY
-router.get("/", getByMonth);
+  const doc = await DayEntry.findOneAndUpdate(
+    { date },
+    { date, hours, spent, weight, comment },
+    { upsert: true, new: true }
+  );
 
-// SAVE (UPSERT)
-router.post("/", saveDay);
+  res.json(doc);
+});
+
+/* GET DAY BY DATE */
+router.get("/:date", async (req, res) => {
+  const day = await DayEntry.findOne({ date: req.params.date });
+  res.json(day);
+});
 
 export default router;

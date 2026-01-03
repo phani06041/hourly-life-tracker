@@ -1,114 +1,76 @@
 import { Doughnut, Bar } from "react-chartjs-2";
-import {
-  Chart as ChartJS,
-  ArcElement,
-  BarElement,
-  CategoryScale,
-  LinearScale,
-  Tooltip,
-  Legend
-} from "chart.js";
 import { useEffect, useState } from "react";
 
-ChartJS.register(
-  ArcElement,
-  BarElement,
-  CategoryScale,
-  LinearScale,
-  Tooltip,
-  Legend
-);
-
-// SAME LEGEND AS TRACKER
-const LEGEND = {
-  1: { label: "Sleep", color: "#4c6ef5" },
-  2: { label: "Travel", color: "#15aabf" },
-  3: { label: "Work", color: "#40c057" },
-  4: { label: "Chores", color: "#fab005" },
-  5: { label: "Exercise", color: "#fa5252" },
-  6: { label: "Leisure", color: "#7950f2" },
-  7: { label: "Misc / Prep", color: "#868e96" }
-};
-
 export default function Analytics() {
+  const [year, setYear] = useState("2026");
+  const [month, setMonth] = useState("");
   const [hours, setHours] = useState({});
   const [spend, setSpend] = useState({});
 
   useEffect(() => {
-    fetch("http://localhost:5001/api/analytics/hours")
+    let qs = `?year=${year}`;
+    if (month) qs += `&month=${month}`;
+
+    fetch(`http://localhost:5001/api/analytics/hours${qs}`)
       .then(r => r.json())
       .then(setHours);
 
-    fetch("http://localhost:5001/api/analytics/spend")
+    fetch(`http://localhost:5001/api/analytics/spend${qs}`)
       .then(r => r.json())
       .then(setSpend);
-  }, []);
-
-  // --- HOURS DONUT DATA ---
-  const hourLabels = [];
-  const hourValues = [];
-  const hourColors = [];
-
-  Object.entries(hours).forEach(([code, count]) => {
-    if (!LEGEND[code] || count === 0) return;
-    hourLabels.push(LEGEND[code].label);
-    hourValues.push(count);
-    hourColors.push(LEGEND[code].color);
-  });
-
-  // --- SPEND BAR DATA ---
-  const spendLabels = Object.keys(spend);
-  const spendValues = Object.values(spend);
+  }, [year, month]);
 
   return (
     <div>
-      <h2>Analytics</h2>
+      <h2>Spend Tracker</h2>
 
-      {/* HOURS DISTRIBUTION */}
-      <h3>Hourly Distribution</h3>
-      {hourValues.length === 0 ? (
-        <p>No hour data yet</p>
+      {/* FILTERS */}
+      <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
+        <select value={year} onChange={e => setYear(e.target.value)}>
+          <option value="2025">2025</option>
+          <option value="2026">2026</option>
+        </select>
+
+        <select value={month} onChange={e => setMonth(e.target.value)}>
+          <option value="">All Months</option>
+          {[...Array(12).keys()].map(m => {
+            const val = String(m + 1).padStart(2, "0");
+            return (
+              <option key={val} value={val}>
+                {val}
+              </option>
+            );
+          })}
+        </select>
+      </div>
+
+      {/* HOURS DONUT */}
+      {Object.keys(hours).length === 0 ? (
+        <p>No activity data</p>
       ) : (
-        <div style={{ maxWidth: 400 }}>
-          <Doughnut
-            data={{
-              labels: hourLabels,
-              datasets: [
-                {
-                  data: hourValues,
-                  backgroundColor: hourColors
-                }
-              ]
-            }}
-          />
-        </div>
+        <Doughnut
+          data={{
+            labels: Object.keys(hours),
+            datasets: [{ data: Object.values(hours) }]
+          }}
+        />
       )}
 
-      {/* SPEND TRACKER */}
-      <h3 style={{ marginTop: 40 }}>Spend Tracker</h3>
-      {spendValues.length === 0 ? (
-        <p>No spend data yet</p>
+      {/* SPEND BAR */}
+      {Object.keys(spend).length === 0 ? (
+        <p>No spend data</p>
       ) : (
-        <div style={{ maxWidth: 700 }}>
-          <Bar
-            data={{
-              labels: spendLabels,
-              datasets: [
-                {
-                  label: "Monthly Spend (₹)",
-                  data: spendValues,
-                  backgroundColor: "#4c6ef5"
-                }
-              ]
-            }}
-            options={{
-              responsive: true,
-              plugins: {
-                legend: { display: true }
+        <Bar
+          data={{
+            labels: Object.keys(spend),
+            datasets: [
+              {
+                label: "Monthly Spend (₹)",
+                data: Object.values(spend)
               }
-            }}
-          />
-        </div>
+            ]
+          }}
+        />
       )}
     </div>
   );

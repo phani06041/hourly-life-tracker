@@ -1,13 +1,18 @@
-
 import DayEntry from "../models/DayEntry.js";
 
+// ---------------- HOURS DONUT ----------------
 export const hoursAnalytics = async (req, res) => {
-  const { year } = req.query;
-  const days = await DayEntry.find(year ? { date: { $regex: `^${year}` } } : {});
+  const { year, month } = req.query;
+
+  let filter = {};
+  if (year && month) filter.date = { $regex: `^${year}-${month}` };
+  else if (year) filter.date = { $regex: `^${year}` };
+
+  const days = await DayEntry.find(filter);
 
   const result = {};
   days.forEach(d => {
-    Object.values(d.hours).forEach(code => {
+    Object.values(d.hours || {}).forEach(code => {
       if (!code) return;
       result[code] = (result[code] || 0) + 1;
     });
@@ -16,15 +21,22 @@ export const hoursAnalytics = async (req, res) => {
   res.json(result);
 };
 
+// ---------------- SPEND BAR ----------------
 export const spendAnalytics = async (req, res) => {
   const { year } = req.query;
-  const days = await DayEntry.find(year ? { date: { $regex: `^${year}` } } : {});
 
-  const monthly = {};
-  days.forEach(d => {
-    const m = d.date.slice(0,7);
-    monthly[m] = (monthly[m] || 0) + d.spent;
+  if (!year) return res.json({});
+
+  const days = await DayEntry.find({
+    date: { $regex: `^${year}` }
   });
 
-  res.json(monthly);
+  const monthlySpend = {};
+
+  days.forEach(d => {
+    const month = d.date.slice(0, 7); // YYYY-MM
+    monthlySpend[month] = (monthlySpend[month] || 0) + (d.spent || 0);
+  });
+
+  res.json(monthlySpend);
 };

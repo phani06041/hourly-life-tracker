@@ -1,9 +1,9 @@
-
 import express from "express";
-import { hoursAnalytics, spendAnalytics } from "../controllers/analyticsController.js";
-const r = express.Router();
+import { spendAnalytics, hoursAnalytics } from "../controllers/analyticsController.js";
 
-r.get("/hours", hoursAnalytics);
-r.get("/spend", spendAnalytics);
+const router = express.Router();
 
-export default r;
+router.get("/spend", spendAnalytics);
+router.get("/hours", hoursAnalytics);
+
+export default router;
