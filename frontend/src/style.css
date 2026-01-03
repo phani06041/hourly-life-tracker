@@ -1,0 +1,184 @@
+body {
+  font-family: sans-serif;
+  background: #f4f4f4;
+}
+
+.container {
+  background: white;
+  padding: 20px;
+  max-width: 1200px;
+  margin: auto;
+}
+
+.time-header {
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  font-size: 10px;
+  text-align: center;
+  margin-top: 10px;
+}
+
+.hour-grid {
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  gap: 2px;
+}
+
+.hour-grid input {
+  text-align: center;
+  font-size: 12px;
+  height: 28px;
+  border: 1px solid #ccc;
+}
+
+/* REMOVE number spinners */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+.legend {
+  margin-top: 15px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.legend span {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 6px;
+}
+.meta-row {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+  align-items: flex-end;
+}
+
+.meta-field {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+}
+
+.meta-field label {
+  margin-bottom: 4px;
+  font-weight: 600;
+  color: #444;
+}
+
+.meta-field input {
+  width: 120px;
+  padding: 6px 8px;
+  font-size: 14px;
+}
+
+.meta-comment {
+  flex: 1; /* takes remaining space */
+}
+
+.meta-comment textarea {
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 8px;
+  font-size: 14px;
+  resize: vertical; /* 👈 RESIZABLE */
+}
+
+.home {
+  display: flex;
+  gap: 30px;
+  margin-top: 60px;
+}
+
+.home-btn {
+  padding: 20px 40px;
+  font-size: 18px;
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  background: #4c6ef5;
+  color: white;
+}
+
+.home-btn:hover {
+  background: #3b5bdb;
+}
+.time-header div {
+  font-size: 10px;
+  white-space: nowrap;
+}
+.time-header {
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  font-size: 10px;
+  text-align: center;
+  margin-top: 10px;
+}
+
+.hour-grid {
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  gap: 2px;
+}
+
+.hour-grid input {
+  text-align: center;
+  height: 28px;
+  font-size: 12px;
+  border: 1px solid #ccc;
+}
+
+.meta-row {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+  align-items: flex-end;
+}
+
+.meta-field {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+}
+
+.meta-field label {
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.meta-field input {
+  width: 120px;
+  padding: 6px;
+}
+
+.meta-comment {
+  flex: 1;
+}
+
+.meta-comment textarea {
+  width: 100%;
+  min-height: 36px;
+  padding: 6px;
+  resize: vertical;
+}
+
+.legend {
+  margin-top: 10px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.legend span {
+  width: 12px;
+  height: 12px;
+  display: inline-block;
+  margin-right: 6px;
+}
