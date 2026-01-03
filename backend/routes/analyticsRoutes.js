@@ -16,38 +16,49 @@ const router = express.Router();
  */
 router.get("/distribution", async (req, res) => {
   try {
-    const { type, year, month } = req.query;
+    const { type, year, month, from, to } = req.query;
 
-    if (!year || !type) {
-      return res.status(400).json({ error: "Missing params" });
-    }
+    let filter = {};
 
-    let dateRegex = "";
-
+    // ---------- FILTER LOGIC ----------
     if (type === "monthly") {
-      if (!month) {
-        return res.status(400).json({ error: "Month required" });
+      if (!year || !month) {
+        return res.status(400).json({ error: "Year & month required" });
       }
-      dateRegex = `^${year}-${month}`; // YYYY-MM
+      filter.date = { $regex: `^${year}-${month}` };
+    }
+    else if (type === "yearly") {
+      if (!year) {
+        return res.status(400).json({ error: "Year required" });
+      }
+      filter.date = { $regex: `^${year}-` };
+    }
+    else if (type === "lifetime") {
+      filter = {}; // all data
+    }
+    else if (type === "range") {
+      if (!from || !to) {
+        return res.status(400).json({ error: "from & to required" });
+      }
+      filter.date = { $gte: from, $lte: to };
+    }
+    else {
+      return res.status(400).json({ error: "Invalid type" });
     }
 
-    if (type === "yearly") {
-      dateRegex = `^${year}-`; // IMPORTANT dash
-    }
+    const days = await DayEntry.find(filter);
 
-    const days = await DayEntry.find({
-      date: { $regex: dateRegex }
-    });
-
+    // ---------- AGGREGATE HOURS ----------
     const totals = {};
 
-    days.forEach((day) => {
-      Object.values(day.hours || {}).forEach((activity) => {
-        if (!activity) return;
-        totals[activity] = (totals[activity] || 0) + 1;
+    days.forEach(day => {
+      Object.values(day.hours || {}).forEach(code => {
+        if (!code) return;
+        totals[code] = (totals[code] || 0) + 1;
       });
     });
 
+    // ---------- MAP CODES → LABELS ----------
     const LABELS = {
       1: "Sleep",
       2: "Travel",

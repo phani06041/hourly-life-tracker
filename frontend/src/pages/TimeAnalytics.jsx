@@ -24,11 +24,10 @@ const LEGEND = {
   7: { label: "Misc / Prep", color: "#6c757d" }
 };
 
-const now = new Date();
-const CURRENT_YEAR = now.getFullYear();
-const CURRENT_MONTH = String(now.getMonth() + 1).padStart(2, "0");
+const CURRENT_YEAR = new Date().getFullYear();
+const CURRENT_MONTH = String(new Date().getMonth() + 1).padStart(2, "0");
 
-/* Build long year list */
+/* Long scrollable year list */
 const YEARS = [];
 for (let y = CURRENT_YEAR + 20; y >= 1800; y--) YEARS.push(y);
 
@@ -38,15 +37,25 @@ export default function TimeAnalytics() {
   const navigate = useNavigate();
   const dropdownRef = useRef(null);
 
-  const [mode, setMode] = useState("monthly");
+  /* ---------- MODE ---------- */
+  const [mode, setMode] = useState("monthly"); // monthly | yearly | lifetime | range
+
+  /* ---------- YEAR ---------- */
   const [year, setYear] = useState(CURRENT_YEAR);
+  const [yearInput, setYearInput] = useState(String(CURRENT_YEAR));
+  const [yearOpen, setYearOpen] = useState(false);
+
+  /* ---------- MONTH ---------- */
   const [month, setMonth] = useState(CURRENT_MONTH);
+
+  /* ---------- RANGE ---------- */
+  const [from, setFrom] = useState("2024-01");
+  const [to, setTo] = useState(`${CURRENT_YEAR}-12`);
+
+  /* ---------- DATA ---------- */
   const [distribution, setDistribution] = useState({});
 
-  const [yearOpen, setYearOpen] = useState(false);
-  const [yearInput, setYearInput] = useState(String(CURRENT_YEAR));
-
-  /* ---------- CLOSE DROPDOWN ON OUTSIDE CLICK ---------- */
+  /* ---------- CLOSE DROPDOWN ---------- */
   useEffect(() => {
     const close = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -57,24 +66,29 @@ export default function TimeAnalytics() {
     return () => document.removeEventListener("mousedown", close);
   }, []);
 
-  /* ---------- FETCH DATA ---------- */
+  /* ---------- FETCH DATA (DB CONNECTION POINT) ---------- */
   useEffect(() => {
     fetchDistribution();
-  }, [mode, year, month]);
+  }, [mode, year, month, from, to]);
 
   const fetchDistribution = async () => {
     try {
-      const params =
-        mode === "monthly"
-          ? `type=monthly&year=${year}&month=${month}`
-          : `type=yearly&year=${year}`;
+      let url = "";
 
-      const res = await axios.get(
-        `http://localhost:5001/api/analytics/distribution?${params}`
-      );
+      if (mode === "monthly") {
+        url = `http://localhost:5001/api/analytics/distribution?type=monthly&year=${year}&month=${month}`;
+      } else if (mode === "yearly") {
+        url = `http://localhost:5001/api/analytics/distribution?type=yearly&year=${year}`;
+      } else if (mode === "lifetime") {
+        url = `http://localhost:5001/api/analytics/distribution?type=lifetime`;
+      } else if (mode === "range") {
+        url = `http://localhost:5001/api/analytics/distribution?type=range&from=${from}&to=${to}`;
+      }
 
+      const res = await axios.get(url);
       setDistribution(res.data || {});
-    } catch {
+    } catch (err) {
+      console.error("Time analytics fetch error", err);
       setDistribution({});
     }
   };
@@ -119,7 +133,7 @@ export default function TimeAnalytics() {
   /* ---------- FILTER YEARS ---------- */
   const filteredYears = YEARS.filter((y) =>
     String(y).startsWith(yearInput)
-  ).slice(0, 30); // limit render for performance
+  ).slice(0, 40);
 
   /* ---------- UI ---------- */
 
@@ -128,101 +142,121 @@ export default function TimeAnalytics() {
       <h1>Time Analytics</h1>
       <button onClick={() => navigate("/")}>← Back</button>
 
-      {/* MODE */}
+      {/* MODE SWITCH */}
       <div style={{ marginTop: 20 }}>
-        <button
-          onClick={() => setMode("monthly")}
-          style={{
-            marginRight: 10,
-            background: mode === "monthly" ? "#4f6ef7" : "#ccc"
-          }}
-        >
-          Monthly
-        </button>
-
-        <button
-          onClick={() => setMode("yearly")}
-          style={{
-            background: mode === "yearly" ? "#4f6ef7" : "#ccc"
-          }}
-        >
-          Yearly
-        </button>
-      </div>
-
-      {/* FILTERS */}
-      <div
-        style={{ marginTop: 15, display: "flex", alignItems: "center", gap: 10 }}
-        ref={dropdownRef}
-      >
-        <strong>Year:</strong>
-
-        {/* SINGLE INPUT */}
-        <input
-          value={yearInput}
-          onFocus={() => setYearOpen(true)}
-          onChange={(e) => {
-            setYearInput(e.target.value);
-            const v = Number(e.target.value);
-            if (!isNaN(v)) setYear(v);
-          }}
-          style={{
-            width: 120,
-            padding: 6,
-            borderRadius: 6,
-            border: "1px solid #ccc"
-          }}
-        />
-
-        {/* SCROLLABLE DROPDOWN */}
-        {yearOpen && (
-          <div
+        {["monthly", "yearly", "lifetime", "range"].map((m) => (
+          <button
+            key={m}
+            onClick={() => setMode(m)}
             style={{
-              position: "absolute",
-              marginTop: 140,
-              background: "#fff",
-              border: "1px solid #ddd",
-              borderRadius: 8,
-              maxHeight: 240,
-              width: 120,
-              overflowY: "auto",
-              zIndex: 1000
+              marginRight: 10,
+              background: mode === m ? "#4f6ef7" : "#ddd",
+              color: mode === m ? "#fff" : "#000",
+              padding: "6px 14px",
+              borderRadius: 6,
+              border: "none"
             }}
           >
-            {filteredYears.map((y) => (
-              <div
-                key={y}
-                onClick={() => {
-                  setYear(y);
-                  setYearInput(String(y));
-                  setYearOpen(false);
-                }}
-                style={{
-                  padding: "6px 10px",
-                  cursor: "pointer",
-                  background: y === year ? "#eef2ff" : "#fff"
-                }}
-              >
-                {y}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* MONTH */}
-        {mode === "monthly" && (
-          <select
-            value={month}
-            onChange={(e) => setMonth(e.target.value)}
-            style={{ padding: 6 }}
-          >
-            {Array.from({ length: 12 }, (_, i) => {
-              const m = String(i + 1).padStart(2, "0");
-              return <option key={m}>{m}</option>;
-            })}
-          </select>
-        )}
+            {m === "monthly"
+              ? "Monthly"
+              : m === "yearly"
+              ? "Yearly"
+              : m === "lifetime"
+              ? "Lifetime"
+              : "Custom Range"}
+          </button>
+        ))}
       </div>
+
+      {/* YEAR FILTER */}
+      {(mode === "monthly" || mode === "yearly") && (
+        <div
+          ref={dropdownRef}
+          style={{ marginTop: 15, position: "relative", display: "inline-block" }}
+        >
+          <strong>Year:</strong>
+          <input
+            value={yearInput}
+            onFocus={() => setYearOpen(true)}
+            onChange={(e) => setYearInput(e.target.value)}
+            onBlur={() => {
+              const v = Number(yearInput);
+              if (!isNaN(v) && v >= 1800) setYear(v);
+              else setYearInput(String(year));
+            }}
+            style={{
+              marginLeft: 8,
+              padding: 6,
+              width: 110,
+              borderRadius: 6,
+              border: "1px solid #ccc"
+            }}
+          />
+
+          {yearOpen && (
+            <div
+              style={{
+                position: "absolute",
+                top: 38,
+                left: 48,
+                width: 110,
+                maxHeight: 240,
+                overflowY: "auto",
+                background: "#fff",
+                border: "1px solid #ddd",
+                borderRadius: 8,
+                zIndex: 1000
+              }}
+            >
+              {filteredYears.map((y) => (
+                <div
+                  key={y}
+                  onClick={() => {
+                    setYear(y);
+                    setYearInput(String(y));
+                    setYearOpen(false);
+                  }}
+                  style={{
+                    padding: "6px 10px",
+                    cursor: "pointer",
+                    background: y === year ? "#eef2ff" : "#fff"
+                  }}
+                >
+                  {y}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* MONTH FILTER */}
+      {mode === "monthly" && (
+        <select
+          value={month}
+          onChange={(e) => setMonth(e.target.value)}
+          style={{ marginLeft: 10, padding: 6 }}
+        >
+          {Array.from({ length: 12 }, (_, i) => {
+            const m = String(i + 1).padStart(2, "0");
+            return <option key={m}>{m}</option>;
+          })}
+        </select>
+      )}
+
+      {/* RANGE FILTER */}
+      {mode === "range" && (
+        <div style={{ marginTop: 15, display: "flex", gap: 12 }}>
+          <div>
+            <label>From</label>
+            <input type="month" value={from} onChange={(e) => setFrom(e.target.value)} />
+          </div>
+          <div>
+            <label>To</label>
+            <input type="month" value={to} onChange={(e) => setTo(e.target.value)} />
+          </div>
+        </div>
+      )}
 
       {/* CHART + BREAKDOWN */}
       {labels.length > 0 ? (
