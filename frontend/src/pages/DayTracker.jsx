@@ -44,6 +44,9 @@ export default function DayTracker() {
   const [isPainting, setIsPainting] = useState(false);
   const [is24Hour, setIs24Hour] = useState(false);
 
+  /* ✅ ADDED — TRACK UNSAVED CHANGES */
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
   /* ================= LOAD DAY ================= */
 
   useEffect(() => {
@@ -58,6 +61,7 @@ export default function DayTracker() {
           setSpent(0);
           setWeight(0);
           setComment("");
+          setHasUnsavedChanges(false); // ✅ reset on load
           return;
         }
 
@@ -67,12 +71,14 @@ export default function DayTracker() {
         setSpent(res.data.spent ?? 0);
         setWeight(res.data.weight ?? 0);
         setComment(res.data.comment ?? "");
+        setHasUnsavedChanges(false); // ✅ loaded = saved
 
       } catch {
         setHours(emptyHours());
         setSpent(0);
         setWeight(0);
         setComment("");
+        setHasUnsavedChanges(false);
       }
     };
 
@@ -91,12 +97,15 @@ export default function DayTracker() {
     };
 
     await axios.post("http://localhost:5001/api/day", payload);
+
+    setHasUnsavedChanges(false); // ✅ reset ONLY after save
     alert("Saved");
   };
 
   /* ================= HELPERS ================= */
 
   const paintHour = (index) => {
+    setHasUnsavedChanges(true); // ✅ mark dirty
     setHours((prev) => {
       const copy = [...prev];
       copy[index] = selectedActivity;
@@ -165,153 +174,179 @@ export default function DayTracker() {
 
       <button onClick={() => navigate("/")}>← Back</button>
 
-      <h2>Daily Tracker</h2>
+      {/* ✅ EXPORT BUTTON (UNCHANGED, JUST PASS FLAG) */}
+      <ExportButton
+        url={`/api/export/daily?type=daily&date=${date}`}
+        filename={`daily-${date}`}
+        hasUnsavedChanges={hasUnsavedChanges}
+      />
 
-      {/* DATE + FORMAT */}
-      <div style={{ display: "flex", gap: 12 }}>
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-        />
-        <button onClick={() => setIs24Hour(!is24Hour)}>
-          Switch to {is24Hour ? "12-Hour" : "24-Hour"}
-        </button>
-      </div>
-<ExportButton
-  url={`http://localhost:5001/api/export/daily?type=daily&date=${date}`}
-/>
+      {/* ================= PDF EXPORT AREA ================= */}
+      <div id="export-area">
 
-      {/* LEGEND PICKER */}
-      <div className="legend-picker">
-        {Object.entries(LEGEND).map(([k, v]) => (
-          <button
-            key={k}
-            onClick={() => setSelectedActivity(Number(k))}
-            style={{
-              background: v.color,
-              border:
-                selectedActivity === Number(k)
-                  ? "2px solid black"
-                  : "none"
+        <h2>Daily Tracker</h2>
+
+        {/* DATE + FORMAT */}
+        <div style={{ display: "flex", gap: 12 }}>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => {
+              setDate(e.target.value);
+              setHasUnsavedChanges(false); // date change loads new data
             }}
-          >
-            {k} – {v.label}
+          />
+          <button onClick={() => setIs24Hour(!is24Hour)}>
+            Switch to {is24Hour ? "12-Hour" : "24-Hour"}
           </button>
-        ))}
-      </div>
-
-      {/* HOURS GRID */}
-      <div
-        className="hour-grid"
-        onMouseUp={() => setIsPainting(false)}
-      >
-        {hours.map((val, i) => (
-          <div
-            key={i}
-            className="hour-cell"
-            onMouseDown={() => {
-              setIsPainting(true);
-              paintHour(i);
-            }}
-            onMouseEnter={() => {
-              if (isPainting) paintHour(i);
-            }}
-            style={{
-              background: LEGEND[val]?.color || "#fff",
-              color: val ? "#fff" : "#000"
-            }}
-          >
-            <div>{formatHour(i)}</div>
-            <div>{val}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* META INPUTS */}
-      <div className="meta-row">
-        <div className="meta-field">
-          <label>Spent (₹)</label>
-          <input
-            type="number"
-            value={spent}
-            onChange={(e) => setSpent(+e.target.value)}
-          />
         </div>
 
-        <div className="meta-field">
-          <label>Weight (kg)</label>
-          <input
-            type="number"
-            value={weight}
-            onChange={(e) => setWeight(+e.target.value)}
-          />
-        </div>
-
-        <div className="meta-comment">
-          <label>Comment / Highlight</label>
-          <textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-          />
-        </div>
-      </div>
-
-      <button onClick={saveDay} style={{ marginTop: 12 }}>
-        Save Day
-      </button>
-
-      {/* ANALYTICS */}
-      <h3 style={{ marginTop: 30 }}>Daily Time Distribution</h3>
-
-      {activityStats.length > 0 ? (
-        <div style={{ display: "flex", gap: 30 }}>
-          <div style={{ position: "relative", width: 260 }}>
-            <Doughnut
-              data={doughnutData}
-              options={doughnutOptions}
-            />
-            <div
+        {/* LEGEND PICKER */}
+        <div className="legend-picker">
+          {Object.entries(LEGEND).map(([k, v]) => (
+            <button
+              key={k}
+              onClick={() => {
+                setSelectedActivity(Number(k));
+                setHasUnsavedChanges(true);
+              }}
               style={{
-                position: "absolute",
-                top: "50%",
-                left: "50%",
-                transform: "translate(-50%, -50%)",
-                textAlign: "center"
+                background: v.color,
+                border:
+                  selectedActivity === Number(k)
+                    ? "2px solid black"
+                    : "none"
               }}
             >
-              <div style={{ fontSize: 24, fontWeight: "bold" }}>
-                {totalTracked}h
-              </div>
-              <div style={{ fontSize: 12, color: "#666" }}>
-                Total Logged
-              </div>
+              {k} – {v.label}
+            </button>
+          ))}
+        </div>
+
+        {/* HOURS GRID */}
+        <div
+          className="hour-grid"
+          onMouseUp={() => setIsPainting(false)}
+        >
+          {hours.map((val, i) => (
+            <div
+              key={i}
+              className="hour-cell"
+              onMouseDown={() => {
+                setIsPainting(true);
+                paintHour(i);
+              }}
+              onMouseEnter={() => {
+                if (isPainting) paintHour(i);
+              }}
+              style={{
+                background: LEGEND[val]?.color || "#fff",
+                color: val ? "#fff" : "#000"
+              }}
+            >
+              <div>{formatHour(i)}</div>
+              <div>{val}</div>
             </div>
+          ))}
+        </div>
+
+        {/* META INPUTS */}
+        <div className="meta-row">
+          <div className="meta-field">
+            <label>Spent (₹)</label>
+            <input
+              type="number"
+              value={spent}
+              onChange={(e) => {
+                setSpent(+e.target.value);
+                setHasUnsavedChanges(true);
+              }}
+            />
           </div>
 
-          <div>
-            {activityStats.map((a) => {
-              const pct = ((a.hours / totalTracked) * 100).toFixed(1);
-              return (
-                <div key={a.key} style={{ marginBottom: 8 }}>
-                  <span
-                    style={{
-                      width: 12,
-                      height: 12,
-                      background: a.color,
-                      display: "inline-block",
-                      marginRight: 8
-                    }}
-                  />
-                  <strong>{a.label}</strong> — {a.hours}h ({pct}%)
-                </div>
-              );
-            })}
+          <div className="meta-field">
+            <label>Weight (kg)</label>
+            <input
+              type="number"
+              value={weight}
+              onChange={(e) => {
+                setWeight(+e.target.value);
+                setHasUnsavedChanges(true);
+              }}
+            />
+          </div>
+
+          <div className="meta-comment">
+            <label>Comment / Highlight</label>
+            <textarea
+              value={comment}
+              onChange={(e) => {
+                setComment(e.target.value);
+                setHasUnsavedChanges(true);
+              }}
+            />
           </div>
         </div>
-      ) : (
-        <p>No activities logged</p>
-      )}
+
+        {/* SAVE */}
+        <button onClick={saveDay} style={{ marginTop: 12 }}>
+          Save Day
+        </button>
+
+        {/* ANALYTICS */}
+        <h3 style={{ marginTop: 30 }}>Daily Time Distribution</h3>
+
+        {activityStats.length > 0 ? (
+          <div style={{ display: "flex", gap: 30 }}>
+            <div style={{ position: "relative", width: 260 }}>
+              <Doughnut
+                data={doughnutData}
+                options={doughnutOptions}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  textAlign: "center"
+                }}
+              >
+                <div style={{ fontSize: 24, fontWeight: "bold" }}>
+                  {totalTracked}h
+                </div>
+                <div style={{ fontSize: 12, color: "#666" }}>
+                  Total Logged
+                </div>
+              </div>
+            </div>
+
+            <div>
+              {activityStats.map((a) => {
+                const pct = ((a.hours / totalTracked) * 100).toFixed(1);
+                return (
+                  <div key={a.key} style={{ marginBottom: 8 }}>
+                    <span
+                      style={{
+                        width: 12,
+                        height: 12,
+                        background: a.color,
+                        display: "inline-block",
+                        marginRight: 8
+                      }}
+                    />
+                    <strong>{a.label}</strong> — {a.hours}h ({pct}%)
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <p>No activities logged</p>
+        )}
+
+      </div>
+      {/* ================= END PDF EXPORT AREA ================= */}
     </div>
   );
 }

@@ -178,6 +178,7 @@ export default function SpendTracker() {
 
   return (
     <div className="container">
+    <div id="export-area">
       <h1>Spend Tracker</h1>
       <button onClick={() => navigate("/")}>← Back</button>
 <ExportButton
@@ -331,6 +332,7 @@ export default function SpendTracker() {
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }

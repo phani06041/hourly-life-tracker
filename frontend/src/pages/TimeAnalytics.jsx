@@ -140,6 +140,7 @@ export default function TimeAnalytics() {
 
   return (
     <div className="container">
+      <div id="export-area">
       <h1>Time Analytics</h1>
       <button onClick={() => navigate("/")}>← Back</button>
 <ExportButton
@@ -308,6 +309,7 @@ export default function TimeAnalytics() {
       ) : (
         <p style={{ marginTop: 40 }}>No data available.</p>
       )}
+    </div>
     </div>
   );
 }

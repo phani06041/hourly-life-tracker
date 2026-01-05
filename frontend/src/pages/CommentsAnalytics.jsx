@@ -43,6 +43,7 @@ export default function CommentsHighlights() {
 
   return (
     <div className="container">
+    <div id="export-area">
       <h1>Comments & Highlights</h1>
       <button onClick={() => navigate("/")}>← Back</button>
 <ExportButton
@@ -125,6 +126,7 @@ export default function CommentsHighlights() {
           ))
         )}
       </div>
+    </div>
     </div>
   );
 }

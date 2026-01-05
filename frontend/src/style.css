@@ -277,3 +277,15 @@ button:hover {
   opacity: 0.75;
   margin-top: 6px;
 }
+.export-option {
+  width: 100%;
+  padding: 8px 12px;
+  background: #6fdf07;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.export-option:hover {
+  background: #e20ccd;
+}
