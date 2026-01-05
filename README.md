@@ -1,4 +1,4 @@
-# ⏱️ Hourly Life & Spend Tracker
+# ⏱️ Productivity Tracking Tool / Hourly Life & Spend Tracker
 
 A full-stack productivity and personal analytics application to **track daily activities hour-by-hour**, **monitor spending**, and **export clean reports** in CSV, Excel, and PDF formats.
 
