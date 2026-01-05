@@ -1,0 +1,6 @@
+# Optional Python utilities (not required to run the app)
+
+pandas>=2.0.0
+numpy>=1.26.0
+matplotlib>=3.8.0
+reportlab>=4.0.0
